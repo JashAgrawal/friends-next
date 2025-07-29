@@ -9,6 +9,7 @@ import "./globals.css";
 import { Suspense } from "react";
 import { PerformanceProvider } from "@/components/ui/performance-provider";
 import { KeyboardNavigationProvider } from "@/components/ui/keyboard-navigation-provider";
+import { Analytics } from "@vercel/analytics/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,6 +61,7 @@ export default function RootLayout({
               <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
             </main>
             <Footer />
+            <Analytics/>
             <MigrationProvider />
             <Toaster position="bottom-center" />
           </KeyboardNavigationProvider>
