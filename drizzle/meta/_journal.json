@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1753188079313,
+      "tag": "0000_bouncy_vin_gonzales",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1753200695998,
+      "tag": "0001_nostalgic_bucky",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1753634925411,
+      "tag": "0002_plain_lord_hawal",
+      "breakpoints": true
+    }
+  ]
+}
