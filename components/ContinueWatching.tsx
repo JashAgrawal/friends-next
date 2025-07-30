@@ -371,9 +371,7 @@ const ContinueWatching = ({ className = "" }: ContinueWatchingProps) => {
                 <div className="absolute bottom-0 p-2 w-full">
                   <p className="text-white text-sm truncate">
                     {item.title || "Unknown Title"}
-                    {item.isLegacy && (
-                      <span className="text-yellow-400 text-xs ml-1">(Legacy)</span>
-                    )}
+                    
                   </p>
                   {item.mediaType === "tv" &&
                     item.seasonNumber &&
