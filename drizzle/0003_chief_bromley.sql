@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `watch_history_profile_id_media_id_media_type_unique` ON `watch_history` (`profile_id`,`media_id`,`media_type`);

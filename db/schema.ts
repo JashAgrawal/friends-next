@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, unique } from "drizzle-orm/sqlite-core";
 
 // Import user table from auth-schema for FK reference
 import { user } from "./auth-schema";
@@ -37,7 +37,10 @@ export const watchHistory = sqliteTable("watch_history", {
   episodeNumber: integer("episode_number"),
   serverId: integer("server_id"),
   lastWatchedAt: integer("last_watched_at", { mode: "timestamp" }).notNull(),
-});
+}, (table) => ({
+  // Unique constraint to ensure one entry per media per profile
+  uniqueMediaPerProfile: unique().on(table.profileId, table.mediaId, table.mediaType),
+}));
 
 // For backward compatibility, create a view for continue_watching
 export const continueWatching = watchHistory;
