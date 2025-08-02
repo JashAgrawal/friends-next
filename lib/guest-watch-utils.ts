@@ -73,22 +73,26 @@ export function addToGuestWatchHistory(
     }
     
     // Find existing item
+    // For TV shows, we want to update the same show entry regardless of episode
+    // For movies, we match by ID and type only
     const itemIndex = profile.continueWatching.findIndex(
       (item: any) => 
         item.id === mediaId && 
-        item.mediaType === mediaType &&
-        (mediaType !== "tv" || 
-          (item.seasonNumber === seasonNumber && item.episodeNumber === episodeNumber))
+        item.mediaType === mediaType
     );
     
     const timestamp = Date.now();
     
     if (itemIndex !== -1) {
-      // Update existing item
+      // Update existing item with new episode/season info
       profile.continueWatching[itemIndex] = {
         ...profile.continueWatching[itemIndex],
-        timestamp,
-        serverId: serverId !== undefined ? serverId : profile.continueWatching[itemIndex].serverId
+        title, // Update title in case it changed
+        posterPath: posterPath !== undefined ? posterPath : profile.continueWatching[itemIndex].posterPath,
+        seasonNumber: seasonNumber !== undefined ? seasonNumber : profile.continueWatching[itemIndex].seasonNumber,
+        episodeNumber: episodeNumber !== undefined ? episodeNumber : profile.continueWatching[itemIndex].episodeNumber,
+        serverId: serverId !== undefined ? serverId : profile.continueWatching[itemIndex].serverId,
+        timestamp
       };
       
       // Move to the top of the list
@@ -171,9 +175,7 @@ export function getGuestWatchHistoryItem(
     const item = profile.continueWatching.find(
       (item: any) => 
         item.id === mediaId && 
-        item.mediaType === mediaType &&
-        (mediaType !== "tv" || 
-          (item.seasonNumber === seasonNumber && item.episodeNumber === episodeNumber))
+        item.mediaType === mediaType
     );
     
     if (!item) return null;
@@ -216,9 +218,7 @@ export function removeFromGuestWatchHistory(
     profile.continueWatching = profile.continueWatching.filter(
       (item: any) => 
         !(item.id === mediaId && 
-          item.mediaType === mediaType &&
-          (mediaType !== "tv" || 
-            (item.seasonNumber === seasonNumber && item.episodeNumber === episodeNumber)))
+          item.mediaType === mediaType)
     );
     
     saveGuestProfile(profile);
@@ -254,9 +254,7 @@ export function updateGuestServerPreference(
     const itemIndex = profile.continueWatching.findIndex(
       (item: any) => 
         item.id === mediaId && 
-        item.mediaType === mediaType &&
-        (mediaType !== "tv" || 
-          (item.seasonNumber === seasonNumber && item.episodeNumber === episodeNumber))
+        item.mediaType === mediaType
     );
     
     if (itemIndex !== -1) {
