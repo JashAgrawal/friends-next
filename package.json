@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "migrate": "drizzle-kit migrate",
-    "generate": "drizzle-kit generate"
+    "generate": "drizzle-kit generate",
+    "postinstall": "drizzle-kit migrate"
   },
   "dependencies": {
     "@libsql/client": "^0.15.10",

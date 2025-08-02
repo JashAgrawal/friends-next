@@ -126,7 +126,7 @@ export function ServerSelector({
             seasonNumber,
             episodeNumber,
             serverId,
-            lastWatchedAt: Date.now(),
+            timestamp: Date.now(),
           };
           continueWatchingArray.push(newItem);
           guestProfile.continueWatching = continueWatchingArray;
