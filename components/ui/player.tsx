@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { addToGuestWatchHistory } from "@/lib/guest-watch-utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useOrientation } from "@/hooks/use-orientation";
+import { usePlayerStore } from "@/store/usePlayerStore";
 import {
   Select,
   SelectContent,
@@ -43,6 +44,7 @@ export function Player({
   const { isAuthenticated } = useAuth();
   const isMobile = useIsMobile();
   const orientation = useOrientation();
+  const { selectedServer } = usePlayerStore();
 
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [episodes, setEpisodes] = useState<{ [key: number]: Episode[] }>({});
@@ -90,7 +92,7 @@ export function Player({
               posterPath,
               seasonNumber: mediaType === "tv" ? selectedSeason : undefined,
               episodeNumber: mediaType === "tv" ? selectedEpisode : undefined,
-              serverId: 0, // Default to VidSrc server
+              serverId: selectedServer,
             }),
           });
 
@@ -106,7 +108,7 @@ export function Player({
             posterPath,
             mediaType === "tv" ? selectedSeason : undefined,
             mediaType === "tv" ? selectedEpisode : undefined,
-            0 // Default to VidSrc server
+            selectedServer
           );
         }
 
@@ -126,13 +128,14 @@ export function Player({
       posterPath,
       selectedSeason,
       selectedEpisode,
+      selectedServer,
     ]
   );
 
   // Get the embed URL from the selected server
   const getVideoUrl = () => {
     return getEmbedUrl(
-      0, // VidSrc server (index 0 in servers array)
+      selectedServer,
       mediaType,
       id,
       selectedSeason.toString(),
@@ -327,7 +330,18 @@ export function Player({
     if (mediaType === "tv" && !episodes[selectedSeason]) {
       loadEpisodes(parseInt(id), selectedSeason);
     }
-  }, [selectedSeason, episodes, mediaType, id,loadEpisodes]);
+  }, [selectedSeason, episodes, mediaType, id, loadEpisodes]);
+
+  // Reload video when server changes
+  useEffect(() => {
+    // Force a brief loading state when server changes to provide visual feedback
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [selectedServer]);
 
   return (
     <div
@@ -379,6 +393,7 @@ export function Player({
           </div>
         ) : (
           <iframe
+            key={`${selectedServer}-${mediaType}-${id}-${selectedSeason}-${selectedEpisode}`}
             src={getVideoUrl()}
             className="w-full h-full border-0"
             allowFullScreen

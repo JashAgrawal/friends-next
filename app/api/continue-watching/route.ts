@@ -20,21 +20,35 @@ export async function GET(req: NextRequest) {
     );
 
   if (activeProfile.length === 0) {
-    // Fallback to legacy table if no active profile
-    const legacyItems = await db
-      .select()
-      .from(legacyContinueWatching)
-      .where(eq(legacyContinueWatching.userId, session.user.id))
-      .orderBy(desc(legacyContinueWatching.lastWatchedAt));
+    // Create a default profile for the user if none exists
+    const defaultProfileId = generateId();
+    const now = new Date();
+    
+    await db.insert(profiles).values({
+      id: defaultProfileId,
+      userId: session.user.id,
+      name: session.user.name || 'Default Profile',
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    });
 
-    // Note: Legacy items don't have mediaId, so navigation might not work correctly
-    // Users should re-add items to continue watching to get proper TMDB mediaId
-    return NextResponse.json(legacyItems.map(item => ({
-      ...item,
-      // Add a flag to indicate this is legacy data
-      isLegacy: true,
-      lastWatchedAt: new Date(item.lastWatchedAt * 1000).getTime(),
-    })));
+    // Use the newly created profile
+    const profileId = defaultProfileId;
+
+    // Get all items from watch history (no progress filtering)
+    const items = await db
+      .select()
+      .from(watchHistory)
+      .where(eq(watchHistory.profileId, profileId))
+      .orderBy(desc(watchHistory.lastWatchedAt));
+
+    return NextResponse.json(
+      items.map((item) => ({
+        ...item,
+        lastWatchedAt: new Date(item.lastWatchedAt).getTime(),
+      }))
+    );
   }
 
   const profileId = activeProfile[0].id;
@@ -72,89 +86,46 @@ export async function POST(req: NextRequest) {
     serverId,
   } = body;
 
+  // Validate that we have a proper mediaId for new watch history entries
+  if (!mediaId || mediaId === 0) {
+    return NextResponse.json(
+      { error: "mediaId is required and must be a valid TMDB ID" },
+      { status: 400 }
+    );
+  }
+
   // Get active profile
-  const activeProfile = await db
+  let activeProfile = await db
     .select()
     .from(profiles)
     .where(
       and(eq(profiles.userId, session.user.id), eq(profiles.isActive, true))
     );
 
+  // Create a default profile if none exists
   if (activeProfile.length === 0) {
-    // Fallback to legacy table if no active profile
-    // For legacy table, we need to use title matching since there's no mediaId
-    // For TV shows, we'll check for same title and media type (not specific episode)
-    const conditions = [
-      eq(legacyContinueWatching.userId, session.user.id),
-      eq(legacyContinueWatching.mediaType, mediaType),
-      eq(legacyContinueWatching.title, title),
-    ];
+    const defaultProfileId = generateId();
+    const now = new Date();
+    
+    await db.insert(profiles).values({
+      id: defaultProfileId,
+      userId: session.user.id,
+      name: session.user.name || 'Default Profile',
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    });
 
-    const existingLegacyItems = await db
-      .select()
-      .from(legacyContinueWatching)
-      .where(and(...conditions));
-
-    const timestamp = Math.floor(Date.now() / 1000);
-
-    if (existingLegacyItems.length > 0) {
-      // Update existing entry with new episode/season info
-      const existingItem = existingLegacyItems[0];
-      
-      const updatedLegacyData = {
-        posterPath: posterPath || existingItem.posterPath,
-        seasonNumber: seasonNumber || existingItem.seasonNumber,
-        episodeNumber: episodeNumber || existingItem.episodeNumber,
-        serverId: serverId || existingItem.serverId,
-        lastWatchedAt: timestamp,
-      };
-
-      await db
-        .update(legacyContinueWatching)
-        .set(updatedLegacyData)
-        .where(eq(legacyContinueWatching.id, existingItem.id));
-
-      return NextResponse.json({
-        ...existingItem,
-        ...updatedLegacyData,
-        lastWatchedAt: new Date(timestamp * 1000).getTime(),
-      });
-    } else {
-      // Insert new entry (for movies, always create new; for TV shows, create if different episode)
-      const [item] = await db
-        .insert(legacyContinueWatching)
-        .values({
-          userId: session.user.id,
-          mediaType,
-          title,
-          posterPath: posterPath || null,
-          lastWatchedAt: timestamp,
-          progress: 0, // Keep for legacy compatibility
-          seasonNumber: seasonNumber || null,
-          episodeNumber: episodeNumber || null,
-          serverId: serverId || null,
-        })
-        .returning();
-
-      // Keep only the last 15 items per user to prevent unlimited growth
-      const allLegacyItems = await db
-        .select()
-        .from(legacyContinueWatching)
-        .where(eq(legacyContinueWatching.userId, session.user.id))
-        .orderBy(desc(legacyContinueWatching.lastWatchedAt));
-
-      if (allLegacyItems.length > 15) {
-        const itemsToDelete = allLegacyItems.slice(15);
-        for (const legacyItem of itemsToDelete) {
-          await db.delete(legacyContinueWatching).where(eq(legacyContinueWatching.id, legacyItem.id));
-        }
-      }
-
-      return NextResponse.json({
-        ...item,
-        lastWatchedAt: new Date(timestamp * 1000).getTime(),
-      });
-    }
+    // Update activeProfile to include the newly created profile
+    activeProfile = [{
+      id: defaultProfileId,
+      userId: session.user.id,
+      name: session.user.name || 'Default Profile',
+      avatar: null,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    }];
   }
 
   const profileId = activeProfile[0].id;
@@ -163,7 +134,7 @@ export async function POST(req: NextRequest) {
   // Check if an entry already exists for this media
   const conditions = [
     eq(watchHistory.profileId, profileId),
-    eq(watchHistory.mediaId, mediaId || 0),
+    eq(watchHistory.mediaId, mediaId),
     eq(watchHistory.mediaType, mediaType),
   ];
 
@@ -202,7 +173,7 @@ export async function POST(req: NextRequest) {
     const newItem = {
       id,
       profileId,
-      mediaId: mediaId || 0,
+      mediaId,
       mediaType,
       title,
       posterPath: posterPath || null,
@@ -258,34 +229,49 @@ export async function DELETE(req: NextRequest) {
   } else if (mediaId && mediaType) {
     // Delete by media details
     // Get active profile
-    const activeProfile = await db
+    let activeProfile = await db
       .select()
       .from(profiles)
       .where(
         and(eq(profiles.userId, session.user.id), eq(profiles.isActive, true))
       );
 
-    if (activeProfile.length > 0) {
-      const profileId = activeProfile[0].id;
+    // Create a default profile if none exists
+    if (activeProfile.length === 0) {
+      const defaultProfileId = generateId();
+      const now = new Date();
+      
+      await db.insert(profiles).values({
+        id: defaultProfileId,
+        userId: session.user.id,
+        name: session.user.name || 'Default Profile',
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
 
-      // Delete by mediaId and mediaType only (remove all entries for this media)
-      const conditions = [
-        eq(watchHistory.profileId, profileId),
-        eq(watchHistory.mediaId, mediaId),
-        eq(watchHistory.mediaType, mediaType),
-      ];
-
-      await db.delete(watchHistory).where(and(...conditions));
-    } else {
-      // Fallback to legacy table - delete by mediaType only since legacy doesn't have mediaId
-      // We'll need to use title matching for legacy entries
-      const conditions = [
-        eq(legacyContinueWatching.userId, session.user.id),
-        eq(legacyContinueWatching.mediaType, mediaType),
-      ];
-
-      await db.delete(legacyContinueWatching).where(and(...conditions));
+      // Update activeProfile to include the newly created profile
+      activeProfile = [{
+        id: defaultProfileId,
+        userId: session.user.id,
+        name: session.user.name || 'Default Profile',
+        avatar: null,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      }];
     }
+
+    const profileId = activeProfile[0].id;
+
+    // Delete by mediaId and mediaType only (remove all entries for this media)
+    const conditions = [
+      eq(watchHistory.profileId, profileId),
+      eq(watchHistory.mediaId, mediaId),
+      eq(watchHistory.mediaType, mediaType),
+    ];
+
+    await db.delete(watchHistory).where(and(...conditions));
   }
 
   return NextResponse.json({ success: true });

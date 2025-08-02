@@ -299,9 +299,15 @@ const ContinueWatching = ({ className = "" }: ContinueWatchingProps) => {
 
   const handleItemClick = (item: ContinueWatchingItem & { isLegacy?: boolean }) => {
     // Check if this is a legacy item without proper mediaId
-    if (item.isLegacy || (!item.id || item.id < 1000)) {
-      // Legacy items or items with database IDs (usually < 1000) won't work for navigation
+    if (item.isLegacy) {
+      // Legacy items won't work for navigation
       toast.error("This item needs to be re-added to continue watching. Please find and play it again to update.");
+      return;
+    }
+    
+    // Check if we have a valid ID for navigation
+    if (!item.id || item.id === 0) {
+      toast.error("Unable to navigate to this item. Please try playing it again.");
       return;
     }
     
@@ -349,8 +355,16 @@ const ContinueWatching = ({ className = "" }: ContinueWatchingProps) => {
           return (
             <div
               key={uniqueKey}
-              className="relative group cursor-pointer"
+              className="relative group cursor-pointer select-none"
               onClick={() => handleItemClick(item)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleItemClick(item);
+                }
+              }}
             >
             <div className="relative aspect-[2/3] overflow-hidden rounded-md transition-transform duration-300 group-hover:scale-105">
               <div className="relative w-full h-full">
@@ -363,7 +377,7 @@ const ContinueWatching = ({ className = "" }: ContinueWatchingProps) => {
                   alt={item.title || "Movie poster"}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
-                  className="object-cover"
+                  className="object-cover pointer-events-none"
                 />
               </div>
 

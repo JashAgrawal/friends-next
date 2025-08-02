@@ -38,8 +38,8 @@ export const watchHistory = sqliteTable("watch_history", {
   serverId: integer("server_id"),
   lastWatchedAt: integer("last_watched_at", { mode: "timestamp" }).notNull(),
 }, (table) => ({
-  // Unique constraint to ensure one entry per media per profile
-  uniqueMediaPerProfile: unique().on(table.profileId, table.mediaId, table.mediaType),
+  // Unique constraint to ensure one entry per media per profile per episode (for TV shows)
+  uniqueMediaPerProfile: unique().on(table.profileId, table.mediaId, table.mediaType, table.seasonNumber, table.episodeNumber),
 }));
 
 // For backward compatibility, create a view for continue_watching

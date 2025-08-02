@@ -62,7 +62,27 @@ export function ServerSelector({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              ...item,
+              mediaId: item.id, // Use the TMDB ID from the item
+              mediaType: item.mediaType,
+              title: item.title,
+              posterPath: item.posterPath,
+              seasonNumber: item.seasonNumber,
+              episodeNumber: item.episodeNumber,
+              serverId,
+            }),
+          });
+        } else {
+          // If no existing item, create a new one with the selected server
+          await fetch("/api/continue-watching", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              mediaId,
+              mediaType,
+              seasonNumber,
+              episodeNumber,
               serverId,
             }),
           });
@@ -96,6 +116,19 @@ export function ServerSelector({
         
         if (itemIndex !== -1) {
           continueWatchingArray[itemIndex].serverId = serverId;
+          guestProfile.continueWatching = continueWatchingArray;
+          saveGuestProfile(guestProfile);
+        } else {
+          // If no existing item, create a new one with the selected server
+          const newItem = {
+            id: mediaId,
+            mediaType,
+            seasonNumber,
+            episodeNumber,
+            serverId,
+            lastWatchedAt: Date.now(),
+          };
+          continueWatchingArray.push(newItem);
           guestProfile.continueWatching = continueWatchingArray;
           saveGuestProfile(guestProfile);
         }
