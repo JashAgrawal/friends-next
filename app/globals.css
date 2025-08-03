@@ -302,6 +302,27 @@ body {
   contain: layout style paint;
   transform: translateZ(0);
 }
+
+/* Fix dropdown positioning issues */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+[data-slot="select-content"] {
+  z-index: 9999 !important;
+}
+
+/* Ensure select dropdowns appear above all other content */
+.select-dropdown-container {
+  position: relative;
+  z-index: 100;
+}
+
+/* Fix for select content positioning */
+[data-radix-select-content] {
+  z-index: 9999 !important;
+  position: fixed !important;
+}
 /*
  Enhanced focus styles for better accessibility */
 .focus-visible {

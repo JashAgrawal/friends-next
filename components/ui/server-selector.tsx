@@ -143,7 +143,7 @@ export function ServerSelector({
   };
   
   return (
-    <div className={className}>
+    <div className={`relative z-50 ${className}`}>
       <Select
         value={selectedServer.toString()}
         onValueChange={handleServerChange}
@@ -151,7 +151,11 @@ export function ServerSelector({
         <SelectTrigger className="bg-black/40 text-white border-none hover:bg-black/60 w-full md:w-48">
           <SelectValue placeholder={servers[selectedServer].name} />
         </SelectTrigger>
-        <SelectContent className="bg-black/90 text-white border-gray-700">
+        <SelectContent 
+          className="bg-black/90 text-white border-gray-700 z-[100]"
+          position="popper"
+          sideOffset={4}
+        >
           {servers.map((server, index) => (
             <SelectItem
               key={index}

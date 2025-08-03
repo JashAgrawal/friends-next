@@ -458,7 +458,7 @@ export function DetailsPageClient({ mediaType, id }: DetailsPageClientProps) {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Episodes</h2>
-                <div>
+                <div className="relative z-50">
                   <Select
                     value={selectedSeason.toString()}
                     onValueChange={handleSeasonChange}
@@ -468,12 +468,16 @@ export function DetailsPageClient({ mediaType, id }: DetailsPageClientProps) {
                         Season {selectedSeason}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                    <SelectContent 
+                      className="bg-gray-800 border-gray-700 text-white z-[100]"
+                      position="popper"
+                      sideOffset={4}
+                    >
                       {seasons.map((season) => (
                         <SelectItem
                           key={season.id}
                           value={season.season_number.toString()}
-                          className="text-white hover:bg-gray-700"
+                          className="text-white hover:bg-gray-700 focus:bg-gray-700"
                         >
                           Season {season.season_number}
                         </SelectItem>
