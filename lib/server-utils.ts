@@ -23,11 +23,11 @@ export const servers: VideoServer[] = [
         : `https://vidzee.wtf/movie/${id}`,
   },
   {
-    name: "Videasy",
+    name: "VidKing",
     getter: (type: string, id: string, ss?: string, ep?: string) =>
       type === "tv"
-        ? `https://player.videasy.net/tv/${id}/${ss || 1}/${ep || 1}`
-        : `https://player.videasy.net/movie/${id}`,
+        ? `https://www.vidking.net/embed/tv/${id}/${ss || 1}/${ep || 1}`
+        : `https://www.vidking.net/embed/movie/${id}`,
   },
   {
     name: "Vidzee 4K",
